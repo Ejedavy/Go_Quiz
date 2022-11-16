@@ -1,5 +1,6 @@
 # Go_Quiz
-
+The flags supported are --csv "path to a csv file with the format given below"
+                        --duration to set a timer for the quiz
 
 [![exercise status: released](https://img.shields.io/badge/exercise%20status-released-green.svg?style=for-the-badge)](https://gophercises.com/exercises/quiz)
 
