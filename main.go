@@ -21,8 +21,8 @@ func main() {
 	if err != nil {
 		handleError("Failed to parse the file", errors.New("Improper formatting"))
 	}
-	fmt.Println(problems)
-
+	correctAnswers := startQuiz(problems)
+	fmt.Println("You have answered", correctAnswers, "correctly out of", len(problems))
 }
 
 type problem struct {
@@ -44,4 +44,18 @@ func readFile(file *os.File) ([]problem, error) {
 		problems = append(problems, problem{question: q, answer: a})
 	}
 	return problems, nil
+}
+
+func startQuiz(problems []problem) int {
+	var correctAnswers int
+	for index, problem := range problems {
+		fmt.Printf("Question #%d: %s = ?\n", index+1, problem.question)
+		var answer string
+		a, _, _ := bufio.NewReader(os.Stdin).ReadLine()
+		answer = strings.TrimSpace(string(a))
+		if answer == problem.answer {
+			correctAnswers++
+		}
+	}
+	return correctAnswers
 }
