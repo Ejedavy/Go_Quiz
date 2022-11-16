@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 func main() {
 	fmt.Println("Welcome to quiz game..")
 	var csvPath *string = flag.String("csv", "problems.csv", "This is the flag you use to read a csv file that contains the questions and answers in the form 5+5,10")
+	var quizDuration *int = flag.Int("duration", 5, "This is the duration of the quiz and by default it is 5 seconds")
 	flag.Parse()
 	f, err := os.Open(*csvPath)
 	if err != nil {
@@ -21,8 +23,12 @@ func main() {
 	if err != nil {
 		handleError("Failed to parse the file", errors.New("Improper formatting"))
 	}
-	correctAnswers := startQuiz(problems)
+	correctAnswers, timeUp := startQuiz(problems, time.Duration(*quizDuration))
+	if timeUp {
+		fmt.Println("TIME UP")
+	}
 	fmt.Println("You have answered", correctAnswers, "correctly out of", len(problems))
+	os.Exit(0)
 }
 
 type problem struct {
@@ -46,16 +52,28 @@ func readFile(file *os.File) ([]problem, error) {
 	return problems, nil
 }
 
-func startQuiz(problems []problem) int {
+func startQuiz(problems []problem, duration time.Duration) (int, bool) {
+	timer := time.NewTimer(duration * time.Second)
+
 	var correctAnswers int
 	for index, problem := range problems {
 		fmt.Printf("Question #%d: %s = ?\n", index+1, problem.question)
-		var answer string
-		a, _, _ := bufio.NewReader(os.Stdin).ReadLine()
-		answer = strings.TrimSpace(string(a))
-		if answer == problem.answer {
-			correctAnswers++
+		var answerChannel = make(chan string)
+		go func() {
+			var answer string
+			a, _, _ := bufio.NewReader(os.Stdin).ReadLine()
+			answer = strings.TrimSpace(string(a))
+			answerChannel <- answer
+		}()
+		select {
+		case <-timer.C:
+			return correctAnswers, true
+		case answer := <-answerChannel:
+			if answer == problem.answer {
+				correctAnswers++
+			}
+			continue
 		}
 	}
-	return correctAnswers
+	return correctAnswers, false
 }
